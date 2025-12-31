@@ -37,7 +37,8 @@ const MyBookings = () => {
     try {
       const res = await apiClient.get(endpoints.GET_BOOKINGS);
       const data = res.data;
-      const mapped = data.map((b) => ({
+      console.log(data)
+      const mapped = data?.map((b) => ({
         id: b.id,
         tourName: b.tour?.title || b.tour || "Tour",
         startDate: b.created_at,
@@ -46,10 +47,11 @@ const MyBookings = () => {
         status: b.status,
         passengers: b.travelers_count,
         bookingDate: b.created_at,
-        tour_details: b.tour, // Added for modal display
+        tour_details: b.tour, 
       }));
       setBookings(mapped);
     } catch (error) {
+      console.log(error)
       message.error("Failed to fetch bookings");
     } finally {
       setLoading(false);

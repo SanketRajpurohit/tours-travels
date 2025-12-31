@@ -35,8 +35,8 @@ const ReviewsList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_REVIEWS);
-      const reviewsData = response.data.results || response.data || [];
-      setReviews(reviewsData);
+      const reviewsData = response.data?.data || response.data?.results || [];
+      setReviews(Array.isArray(reviewsData) ? reviewsData : []);
     } catch (error) {
       console.error('Error fetching reviews:', error);
       message.error('Failed to load reviews');
@@ -99,14 +99,14 @@ const ReviewsList = () => {
     }
   };
 
-  const filteredReviews = reviews.filter((review) => {
+  const filteredReviews = Array.isArray(reviews) ? reviews.filter((review) => {
     const matchesSearch =
-      review.user?.username.toLowerCase().includes(searchText.toLowerCase()) ||
-      review.destination?.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      review.comment.toLowerCase().includes(searchText.toLowerCase());
-    const matchesRating = filterRating === 'all' || review.rating.toString() === filterRating;
+      review.user?.username?.toLowerCase().includes(searchText.toLowerCase()) ||
+      review.destination?.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+      review.comment?.toLowerCase().includes(searchText.toLowerCase());
+    const matchesRating = filterRating === 'all' || review.rating?.toString() === filterRating;
     return matchesSearch && matchesRating;
-  });
+  }) : [];
 
   const getStatusColor = (status) => {
     const colors = {

@@ -18,7 +18,7 @@ import {
 import { motion } from "framer-motion";
 import "./Contact.css";
 import { endpoints } from "../../constant/ENDPOINTS";
-
+import apiClient from "../../services/api";
 const Contact = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = React.useState(false);
@@ -26,13 +26,22 @@ const Contact = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      // TODO: Call API to send contact message
-      await apiClient.post(endpoints.SUBMIT_INQUIRY, values);
+      // Transform form data to match backend API
+      const inquiryData = {
+        name: `${values.firstName} ${values.lastName}`,
+        email: values.email,
+        contact_number: values.phone,
+        inquiry_date: new Date().toISOString().split('T')[0], // Today's date
+        message: `Subject: ${values.subject}\n\n${values.message}`,
+      };
+      
+      await apiClient.post(endpoints.SUBMIT_INQUIRY, inquiryData);
       message.success(
         "Thank you for reaching out! We'll get back to you soon."
       );
       form.resetFields();
     } catch (error) {
+      console.error('Contact form error:', error);
       message.error("Failed to send message. Please try again.");
     } finally {
       setLoading(false);

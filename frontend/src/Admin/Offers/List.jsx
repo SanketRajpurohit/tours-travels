@@ -39,8 +39,8 @@ const OffersList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_OFFERS);
-      const offersData = response.data.results || response.data || [];
-      setOffers(offersData);
+      const offersData = response.data?.data || response.data?.results || [];
+      setOffers(Array.isArray(offersData) ? offersData : []);
     } catch (error) {
       console.error('Error fetching offers:', error);
       message.error('Failed to load offers');
@@ -89,7 +89,7 @@ const OffersList = () => {
     try {
       const submitData = {
         name: values.name,
-        discount: values.discount,
+        discount_percentage: values.discount,
         status: values.status,
         start_date: values.dateRange[0].format('YYYY-MM-DD'),
         end_date: values.dateRange[1].format('YYYY-MM-DD'),

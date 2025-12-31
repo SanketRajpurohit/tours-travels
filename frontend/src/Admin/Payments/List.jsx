@@ -29,8 +29,8 @@ const PaymentsList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_PAYMENTS);
-      const paymentsData = response.data.results || response.data || [];
-      setPayments(paymentsData);
+      const paymentsData = response.data?.data || response.data?.results || [];
+      setPayments(Array.isArray(paymentsData) ? paymentsData : []);
     } catch (error) {
       console.error('Error fetching payments:', error);
       message.error('Failed to load payments');
@@ -70,13 +70,13 @@ const PaymentsList = () => {
     return colors[status] || 'default';
   };
 
-  const filteredPayments = payments.filter((payment) => {
+  const filteredPayments = Array.isArray(payments) ? payments.filter((payment) => {
     const matchesSearch =
-      payment.user?.username.toLowerCase().includes(searchText.toLowerCase()) ||
-      payment.booking?.id.toString().includes(searchText);
+      payment.user?.username?.toLowerCase().includes(searchText.toLowerCase()) ||
+      payment.booking?.id?.toString().includes(searchText);
     const matchesMethod = filterMethod === 'all' || payment.payment_method === filterMethod;
     return matchesSearch && matchesMethod;
-  });
+  }) : [];
 
   const columns = [
     {

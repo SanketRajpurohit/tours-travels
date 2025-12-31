@@ -206,3 +206,23 @@ def verify_token(request):
             message="Invalid or expired token",
             status_code=status.HTTP_401_UNAUTHORIZED
         )
+
+
+@api_view(['GET'])
+def me(request):
+    """
+    Get current user information
+    Returns user profile if authenticated
+    """
+    user = request.user
+    
+    if user.is_authenticated:
+        return APIResponse.success(
+            data=UserProfileSerializer(user).data,
+            message="User profile retrieved successfully"
+        )
+    else:
+        return APIResponse.error(
+            message="Authentication required",
+            status_code=status.HTTP_401_UNAUTHORIZED
+        )

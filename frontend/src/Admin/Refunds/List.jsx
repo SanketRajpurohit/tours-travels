@@ -27,8 +27,8 @@ const RefundsList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_REFUNDS);
-      const refundsData = response.data.results || response.data || [];
-      setRefunds(refundsData);
+      const refundsData = response.data?.data || response.data?.results || [];
+      setRefunds(Array.isArray(refundsData) ? refundsData : []);
     } catch (error) {
       console.error('Error fetching refunds:', error);
       message.error('Failed to load refunds');
@@ -57,13 +57,13 @@ const RefundsList = () => {
     return colors[status] || 'default';
   };
 
-  const filteredRefunds = refunds.filter((refund) => {
+  const filteredRefunds = Array.isArray(refunds) ? refunds.filter((refund) => {
     const matchesSearch =
-      refund.cancellation?.booking?.user?.username.toLowerCase().includes(searchText.toLowerCase()) ||
-      refund.cancellation?.booking?.id.toString().includes(searchText);
+      refund.cancellation?.booking?.user?.username?.toLowerCase().includes(searchText.toLowerCase()) ||
+      refund.cancellation?.booking?.id?.toString().includes(searchText);
     const matchesStatus = filterStatus === 'all' || refund.status === filterStatus;
     return matchesSearch && matchesStatus;
-  });
+  }) : [];
 
   const columns = [
     {

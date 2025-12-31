@@ -38,19 +38,15 @@ const TourForm = () => {
   const fetchDestinations = async () => {
     try {
       const response = await apiClient.get(endpoints.GET_DESTINATIONS);
-      const destinationsData = response.data.results || response.data || [];
-      setDestinations(destinationsData);
+      const destinationsData = response.data?.data || response.data?.results || [];
+      setDestinations(Array.isArray(destinationsData) ? destinationsData : []);
     } catch (error) {
       console.error('Error fetching destinations:', error);
-      // Set dummy destinations
-      setDestinations([
-        { id: 1, name: 'Sikkim' },
-        { id: 2, name: 'Vietnam' },
-        { id: 3, name: 'Goa' },
-        { id: 4, name: 'Rajasthan' },
-      ]);
+      message.error('Failed to load destinations');
+      setDestinations([]);
     }
   };
+      
 
   const fetchTour = async () => {
     try {
@@ -232,7 +228,7 @@ const TourForm = () => {
                 rules={[{ required: true, message: 'Please select destination' }]}
               >
                 <Select placeholder="Select destination">
-                  {destinations.map(dest => (
+                  {Array.isArray(destinations) && destinations.map(dest => (
                     <Option key={dest.id} value={dest.id}>
                       {dest.name}
                     </Option>

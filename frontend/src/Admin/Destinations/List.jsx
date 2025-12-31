@@ -35,8 +35,8 @@ const DestinationsList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_DESTINATIONS);
-      const destinationsData = response.data.results || response.data || [];
-      setDestinations(destinationsData);
+      const destinationsData = response.data?.data || response.data?.results || [];
+      setDestinations(Array.isArray(destinationsData) ? destinationsData : []);
     } catch (error) {
       console.error('Error fetching destinations:', error);
       message.error('Failed to load destinations');

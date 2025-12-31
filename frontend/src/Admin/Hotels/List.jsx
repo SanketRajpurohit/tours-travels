@@ -38,8 +38,8 @@ const HotelsList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_HOTELS);
-      const hotelsData = response.data.results || response.data || [];
-      setHotels(hotelsData);
+      const hotelsData = response.data?.data || response.data?.results || [];
+      setHotels(Array.isArray(hotelsData) ? hotelsData : []);
     } catch (error) {
       console.error('Error fetching hotels:', error);
       message.error('Failed to load hotels');
@@ -68,14 +68,11 @@ const HotelsList = () => {
   const fetchDestinations = async () => {
     try {
       const response = await apiClient.get(endpoints.GET_DESTINATIONS);
-      const destinationsData = response.data.results || response.data || [];
-      setDestinations(destinationsData);
+      const destinationsData = response.data?.data || response.data?.results || [];
+      setDestinations(Array.isArray(destinationsData) ? destinationsData : []);
     } catch (error) {
       console.error('Error fetching destinations:', error);
-      setDestinations([
-        { id: 1, name: 'Darjeeling' },
-        { id: 2, name: 'Gangtok' },
-      ]);
+      setDestinations([]);
     }
   };
 
@@ -236,7 +233,7 @@ const HotelsList = () => {
             rules={[{ required: true, message: 'Please select destination' }]}
           >
             <Select placeholder="Select destination">
-              {destinations.map(dest => (
+              {Array.isArray(destinations) && destinations.map(dest => (
                 <Option key={dest.id} value={dest.id}>
                   {dest.name}
                 </Option>

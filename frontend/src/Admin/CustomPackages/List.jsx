@@ -38,8 +38,8 @@ const CustomPackagesList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_CUSTOM_PACKAGES);
-      const packagesData = response.data.results || response.data || [];
-      setCustomPackages(packagesData);
+      const packagesData = response.data?.data || response.data?.results || [];
+      setCustomPackages(Array.isArray(packagesData) ? packagesData : []);
     } catch (error) {
       console.error('Error fetching custom packages:', error);
       message.error('Failed to load custom packages');
@@ -95,14 +95,14 @@ const CustomPackagesList = () => {
     setDetailModalVisible(true);
   };
 
-  const filteredPackages = customPackages.filter((pkg) => {
+  const filteredPackages = Array.isArray(customPackages) ? customPackages.filter((pkg) => {
     const matchesSearch =
-      pkg.user?.username.toLowerCase().includes(searchText.toLowerCase()) ||
-      pkg.user?.email.toLowerCase().includes(searchText.toLowerCase()) ||
-      pkg.destination.toLowerCase().includes(searchText.toLowerCase());
+      pkg.user?.username?.toLowerCase().includes(searchText.toLowerCase()) ||
+      pkg.user?.email?.toLowerCase().includes(searchText.toLowerCase()) ||
+      pkg.destination?.toLowerCase().includes(searchText.toLowerCase());
     const matchesStatus = filterStatus === 'all' || pkg.status === filterStatus;
     return matchesSearch && matchesStatus;
-  });
+  }) : [];
 
   const getStatusColor = (status) => {
     const colors = {

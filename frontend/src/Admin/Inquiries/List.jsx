@@ -38,47 +38,12 @@ const InquiriesList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_INQUIRIES);
-      const inquiriesData = response.data.results || response.data || [];
-      setInquiries(inquiriesData);
+      const inquiriesData = response.data?.data || response.data?.results || [];
+      setInquiries(Array.isArray(inquiriesData) ? inquiriesData : []);
     } catch (error) {
       console.error('Error fetching inquiries:', error);
       message.error('Failed to load inquiries');
-      // Set dummy data
-      setInquiries([
-        {
-          id: 1,
-          tour: { id: 1, title: 'Sikkim Adventure' },
-          user: { username: 'devesh_patel', email: 'devesh@gmail.com' },
-          name: 'Devesh Patel',
-          email: 'devesh@gmail.com',
-          contact: '7784561190',
-          date: '2024-11-17',
-          inquiry_message: 'WHAT IS PRICE OF VIETNAM(2 PERSON PACKAGE)',
-          status: 'pending',
-        },
-        {
-          id: 2,
-          tour: { id: 2, title: 'Vietnam Discovery' },
-          user: { username: 'amit_shah', email: 'amit@example.com' },
-          name: 'Amit Shah',
-          email: 'amit@example.com',
-          contact: '9876543210',
-          date: '2024-11-15',
-          inquiry_message: 'I want to book a family package for 4 people. Please provide details about accommodation and itinerary.',
-          status: 'responded',
-        },
-        {
-          id: 3,
-          tour: null,
-          user: null,
-          name: 'Priya Sharma',
-          email: 'priya@example.com',
-          contact: '8765432109',
-          date: '2024-11-10',
-          inquiry_message: 'Looking for honeymoon packages to Goa. What are the best options available?',
-          status: 'pending',
-        },
-      ]);
+      setInquiries([]);
     } finally {
       setLoading(false);
     }
@@ -102,21 +67,24 @@ const InquiriesList = () => {
     setDetailModalVisible(true);
   };
 
-  const filteredInquiries = inquiries.filter((inquiry) => {
+  const filteredInquiries = Array.isArray(inquiries) ? inquiries.filter((inquiry) => {
     const matchesSearch =
-      inquiry.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      inquiry.email.toLowerCase().includes(searchText.toLowerCase()) ||
-      inquiry.inquiry_message.toLowerCase().includes(searchText.toLowerCase()) ||
-      inquiry.tour?.title.toLowerCase().includes(searchText.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || inquiry.status === filterStatus;
+      inquiry.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+      inquiry.email?.toLowerCase().includes(searchText.toLowerCase()) ||
+      inquiry.message?.toLowerCase().includes(searchText.toLowerCase()) ||
+      inquiry.tour?.title?.toLowerCase().includes(searchText.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || inquiry.status?.toLowerCase() === filterStatus.toLowerCase();
     return matchesSearch && matchesStatus;
-  });
+  }) : [];
 
   const getStatusColor = (status) => {
     const colors = {
-      pending: 'orange',
-      responded: 'green',
-      closed: 'gray',
+      'NEW': 'orange',
+      'new': 'orange',
+      'RESPONDED': 'green',
+      'responded': 'green',
+      'CLOSED': 'gray',
+      'closed': 'gray',
     };
     return colors[status] || 'default';
   };
@@ -136,7 +104,7 @@ const InquiriesList = () => {
         <div>
           <div style={{ fontWeight: 'bold' }}>{record.name}</div>
           <div style={{ fontSize: '12px', color: '#666' }}>{record.email}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>{record.contact}</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>{record.contact_number}</div>
         </div>
       ),
     },
@@ -153,22 +121,22 @@ const InquiriesList = () => {
     },
     {
       title: 'Message',
-      dataIndex: 'inquiry_message',
-      key: 'inquiry_message',
+      dataIndex: 'message',
+      key: 'message',
       ellipsis: true,
       width: 300,
       render: (message) => (
         <div style={{ maxWidth: 280 }}>
-          {message.length > 100 ? `${message.substring(0, 100)}...` : message}
+          {message && message.length > 100 ? `${message.substring(0, 100)}...` : message || 'N/A'}
         </div>
       ),
     },
     {
       title: 'Date',
-      dataIndex: 'date',
-      key: 'date',
+      dataIndex: 'inquiry_date',
+      key: 'inquiry_date',
       render: (date) => new Date(date).toLocaleDateString(),
-      sorter: (a, b) => new Date(a.date) - new Date(b.date),
+      sorter: (a, b) => new Date(a.inquiry_date) - new Date(b.inquiry_date),
     },
     {
       title: 'Status',
@@ -180,9 +148,9 @@ const InquiriesList = () => {
         </Tag>
       ),
       filters: [
-        { text: 'Pending', value: 'pending' },
-        { text: 'Responded', value: 'responded' },
-        { text: 'Closed', value: 'closed' },
+        { text: 'New', value: 'NEW' },
+        { text: 'Responded', value: 'RESPONDED' },
+        { text: 'Closed', value: 'CLOSED' },
       ],
       onFilter: (value, record) => record.status === value,
     },
@@ -200,20 +168,20 @@ const InquiriesList = () => {
           >
             View
           </Button>
-          {record.status === 'pending' && (
+          {record.status?.toLowerCase() === 'new' && (
             <>
               <Button
                 type="primary"
                 size="small"
                 icon={<CheckCircleOutlined />}
-                onClick={() => handleStatusUpdate(record.id, 'responded')}
+                onClick={() => handleStatusUpdate(record.id, 'RESPONDED')}
               >
                 Mark Responded
               </Button>
               <Button
                 size="small"
                 icon={<CloseCircleOutlined />}
-                onClick={() => handleStatusUpdate(record.id, 'closed')}
+                onClick={() => handleStatusUpdate(record.id, 'CLOSED')}
               >
                 Close
               </Button>
@@ -246,9 +214,9 @@ const InquiriesList = () => {
             onChange={setFilterStatus}
           >
             <Option value="all">All Status</Option>
-            <Option value="pending">Pending</Option>
-            <Option value="responded">Responded</Option>
-            <Option value="closed">Closed</Option>
+            <Option value="NEW">New</Option>
+            <Option value="RESPONDED">Responded</Option>
+            <Option value="CLOSED">Closed</Option>
           </Select>
         </div>
 
@@ -289,7 +257,7 @@ const InquiriesList = () => {
               {selectedInquiry.email}
             </Descriptions.Item>
             <Descriptions.Item label="Contact">
-              {selectedInquiry.contact}
+              {selectedInquiry.contact_number}
             </Descriptions.Item>
             <Descriptions.Item label="Tour" span={2}>
               {selectedInquiry.tour ? (
@@ -299,7 +267,7 @@ const InquiriesList = () => {
               )}
             </Descriptions.Item>
             <Descriptions.Item label="Inquiry Date">
-              {new Date(selectedInquiry.date).toLocaleDateString()}
+              {new Date(selectedInquiry.inquiry_date).toLocaleDateString()}
             </Descriptions.Item>
             <Descriptions.Item label="Status">
               <Tag color={getStatusColor(selectedInquiry.status)}>
@@ -313,7 +281,7 @@ const InquiriesList = () => {
                 borderRadius: '6px',
                 whiteSpace: 'pre-wrap'
               }}>
-                {selectedInquiry.inquiry_message}
+                {selectedInquiry.message}
               </div>
             </Descriptions.Item>
           </Descriptions>

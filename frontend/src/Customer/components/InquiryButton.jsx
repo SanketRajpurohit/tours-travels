@@ -3,7 +3,7 @@ import { Button, Modal, Form, Input, message } from "antd";
 import { QuestionCircleOutlined, CloseOutlined } from "@ant-design/icons";
 import "./InquiryButton.css";
 import { endpoints } from "../../constant/ENDPOINTS";
-
+import {apiClient} from "../../services/api"
 const InquiryButton = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [form] = Form.useForm();
@@ -12,14 +12,23 @@ const InquiryButton = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      // TODO: Call API to submit inquiry
-      await apiClient.post(endpoints.SUBMIT_INQUIRY, values);
+      // Transform form data to match backend API
+      const inquiryData = {
+        name: values.name,
+        email: values.email,
+        contact_number: values.phone,
+        inquiry_date: new Date().toISOString().split('T')[0], // Today's date
+        message: `Tour Type: ${values.tourType}\n\n${values.message}`,
+      };
+      
+      await apiClient.post(endpoints.SUBMIT_INQUIRY, inquiryData);
       message.success(
         "Thank you for your inquiry. We'll get back to you soon!"
       );
       form.resetFields();
       setModalOpen(false);
     } catch (error) {
+      console.error('Inquiry form error:', error);
       message.error("Failed to submit inquiry. Please try again.");
     } finally {
       setLoading(false);

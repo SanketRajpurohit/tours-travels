@@ -42,44 +42,12 @@ const UsersList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_ALL_USERS);
-      const usersData = response.data.results || response.data || [];
-      setUsers(usersData);
+      const usersData = response.data?.data || response.data?.results || [];
+      setUsers(Array.isArray(usersData) ? usersData : []);
     } catch (error) {
       console.error('Error fetching users:', error);
       message.error('Failed to load users');
-      // Set dummy data for development
-      setUsers([
-        {
-          id: 1,
-          username: 'admin',
-          email: 'admin@rimatours.com',
-          first_name: 'Admin',
-          last_name: 'User',
-          role: 'admin',
-          is_active: true,
-          date_joined: '2024-01-01',
-        },
-        {
-          id: 2,
-          username: 'john_doe',
-          email: 'john@example.com',
-          first_name: 'John',
-          last_name: 'Doe',
-          role: 'customer',
-          is_active: true,
-          date_joined: '2024-01-15',
-        },
-        {
-          id: 3,
-          username: 'jane_smith',
-          email: 'jane@example.com',
-          first_name: 'Jane',
-          last_name: 'Smith',
-          role: 'customer',
-          is_active: false,
-          date_joined: '2024-01-20',
-        },
-      ]);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -121,14 +89,14 @@ const UsersList = () => {
     }
   };
 
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = Array.isArray(users) ? users.filter((user) => {
     const matchesSearch =
-      user.username.toLowerCase().includes(searchText.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchText.toLowerCase()) ||
-      `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchText.toLowerCase());
-    const matchesRole = filterRole === 'all' || user.role === filterRole;
+      user.username?.toLowerCase().includes(searchText.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchText.toLowerCase()) ||
+      `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase().includes(searchText.toLowerCase());
+    const matchesRole = filterRole === 'all' || user.role?.toLowerCase() === filterRole.toLowerCase();
     return matchesSearch && matchesRole;
-  });
+  }) : [];
 
   const columns = [
     {
@@ -172,13 +140,13 @@ const UsersList = () => {
       dataIndex: 'role',
       key: 'role',
       render: (role) => (
-        <Tag color={role === 'admin' ? 'blue' : 'green'}>
-          {role.toUpperCase()}
+        <Tag color={role?.toLowerCase() === 'admin' ? 'blue' : 'green'}>
+          {role?.toUpperCase() || 'N/A'}
         </Tag>
       ),
       filters: [
-        { text: 'Admin', value: 'admin' },
-        { text: 'Customer', value: 'customer' },
+        { text: 'Admin', value: 'ADMIN' },
+        { text: 'Customer', value: 'CUSTOMER' },
       ],
       onFilter: (value, record) => record.role === value,
     },
@@ -218,7 +186,7 @@ const UsersList = () => {
           >
             Edit
           </Button>
-          {record.role !== 'admin' && (
+          {record.role?.toLowerCase() !== 'admin' && (
             <Button
               type="primary"
               danger
@@ -262,8 +230,8 @@ const UsersList = () => {
             onChange={setFilterRole}
           >
             <Option value="all">All Roles</Option>
-            <Option value="admin">Admin</Option>
-            <Option value="customer">Customer</Option>
+            <Option value="ADMIN">Admin</Option>
+            <Option value="CUSTOMER">Customer</Option>
           </Select>
         </div>
 

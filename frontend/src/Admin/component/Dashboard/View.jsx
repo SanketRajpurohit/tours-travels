@@ -41,60 +41,74 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      
       // Fetch bookings for stats
       const bookingsRes = await apiClient.get(endpoints.GET_BOOKINGS);
-      const bookings = bookingsRes.data || [];
+      // Handle both API response formats
+      const bookingsData = bookingsRes.data?.data || bookingsRes.data?.results || [];
+      console.log('Bookings data:', bookingsData);
 
       // Fetch users for stats
       const usersRes = await apiClient.get(endpoints.GET_ALL_USERS);
-      const users = usersRes.data || [];
+      const usersData = usersRes.data?.data || usersRes.data?.results || [];
 
       // Fetch payments
       const paymentsRes = await apiClient.get(endpoints.GET_PAYMENTS);
-      const payments = paymentsRes.data || [];
+      const paymentsData = paymentsRes.data?.data || paymentsRes.data?.results || [];
 
-      const completedCount = bookings.filter(
-        (b) => b.status === "confirmed"
-      ).length;
-      const totalPaymentAmount = payments.reduce(
-        (sum, p) => sum + (p.amount || 0),
-        0
-      );
+      // Calculate stats safely
+      const completedCount = Array.isArray(bookingsData) 
+        ? bookingsData.filter(b => b.status === "CONFIRMED").length 
+        : 0;
+        
+      const totalPaymentAmount = Array.isArray(paymentsData)
+        ? paymentsData.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+        : 0;
 
       setStats({
-        totalUsers: users.length,
-        totalBookings: bookings.length,
+        totalUsers: Array.isArray(usersData) ? usersData.length : 0,
+        totalBookings: Array.isArray(bookingsData) ? bookingsData.length : 0,
         totalPayments: totalPaymentAmount,
         completedBookings: completedCount,
       });
 
-      setRecentBookings(bookings.slice(0, 5));
+      // Set recent bookings (first 5)
+      setRecentBookings(Array.isArray(bookingsData) ? bookingsData.slice(0, 5) : []);
     } catch (err) {
       message.error("Failed to load dashboard data");
       console.error(err);
+      
+      // Set default stats on error
+      setStats({
+        totalUsers: 0,
+        totalBookings: 0,
+        totalPayments: 0,
+        completedBookings: 0,
+      });
+      setRecentBookings([]);
     } finally {
       setLoading(false);
     }
   };
 
   const bookingColumns = [
-    { title: "Booking ID", dataIndex: "id", key: "id" },
-    { title: "Customer", dataIndex: ["user", "username"], key: "user" },
-    { title: "Tour", dataIndex: ["tour", "title"], key: "tour" },
+    { title: "Booking ID", dataIndex: "id", key: "id", render: (id) => `#${id.slice(0, 8)}...` },
+    { title: "Customer", dataIndex: "user", key: "user", render: (userId) => `User ${userId}` },
+    { title: "Tour", dataIndex: ["tour_details", "name"], key: "tour" },
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
       render: (status) => {
         const colors = {
-          confirmed: "green",
-          pending: "orange",
-          cancelled: "red",
+          CONFIRMED: "green",
+          PENDING: "orange",
+          CANCELLED: "red",
         };
         return <Tag color={colors[status] || "blue"}>{status}</Tag>;
       },
     },
-    { title: "Total", dataIndex: "total_price", key: "total_price" },
+    { title: "Total", dataIndex: "total_price", key: "total_price", render: (price) => `₹${price}` },
   ];
 
   return (
@@ -109,7 +123,7 @@ const Dashboard = () => {
               title="Total Users"
               value={stats.totalUsers}
               prefix={<UserOutlined />}
-              valueStyle={{ color: "#1890ff" }}
+              styles={{ content: { color: "#1890ff" } }}
             />
           </Card>
         </Col>
@@ -120,7 +134,7 @@ const Dashboard = () => {
               title="Total Bookings"
               value={stats.totalBookings}
               prefix={<ShoppingCartOutlined />}
-              valueStyle={{ color: "#faad14" }}
+              styles={{ content: { color: "#faad14" } }}
             />
           </Card>
         </Col>
@@ -132,7 +146,7 @@ const Dashboard = () => {
               value={stats.totalPayments}
               prefix={<DollarOutlined />}
               precision={2}
-              valueStyle={{ color: "#52c41a" }}
+              styles={{ content: { color: "#52c41a" } }}
             />
           </Card>
         </Col>
@@ -143,7 +157,7 @@ const Dashboard = () => {
               title="Completed"
               value={stats.completedBookings}
               prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: "#13c2c2" }}
+              styles={{ content: { color: "#13c2c2" } }}
             />
           </Card>
         </Col>

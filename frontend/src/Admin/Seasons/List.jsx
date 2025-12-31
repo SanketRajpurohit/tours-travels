@@ -10,6 +10,9 @@ import {
   Input,
   Select,
   Popconfirm,
+  DatePicker,
+  Row,
+  Col,
 } from 'antd';
 import {
   PlusOutlined,
@@ -38,8 +41,8 @@ const SeasonsList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_SEASONS);
-      const seasonsData = response.data.results || response.data || [];
-      setSeasons(seasonsData);
+      const seasonsData = response.data?.data || response.data?.results || [];
+      setSeasons(Array.isArray(seasonsData) ? seasonsData : []);
     } catch (error) {
       console.error('Error fetching seasons:', error);
       message.error('Failed to load seasons');
@@ -75,8 +78,8 @@ const SeasonsList = () => {
   const fetchTours = async () => {
     try {
       const response = await apiClient.get(endpoints.GET_ALL_TOURS);
-      const toursData = response.data.results || response.data || [];
-      setTours(toursData);
+      const toursData = response.data?.data || response.data?.results || [];
+      setTours(Array.isArray(toursData) ? toursData : []);
     } catch (error) {
       console.error('Error fetching tours:', error);
       setTours([
@@ -97,28 +100,38 @@ const SeasonsList = () => {
     form.setFieldsValue({
       tour: season.tour?.id,
       name: season.name,
-      month: season.month,
+    start_month: dayjs().month(season.start_month - 1),
+    end_month: dayjs().month(season.end_month - 1),
       description: season.description,
     });
     setModalVisible(true);
   };
 
   const handleSubmit = async (values) => {
-    try {
-      if (editingSeason) {
-        await apiClient.put(endpoints.GET_SEASON_DETAIL(editingSeason.id), values);
-        message.success('Season updated successfully');
-      } else {
-        await apiClient.post(endpoints.GET_SEASONS, values);
-        message.success('Season created successfully');
-      }
-      setModalVisible(false);
-      fetchSeasons();
-    } catch (error) {
-      console.error('Error saving season:', error);
-      message.error('Failed to save season');
-    }
+  const payload = {
+    ...values,
+    start_month: values.start_month.month() + 1, // 0–11 → 1–12
+    end_month: values.end_month.month() + 1,
   };
+
+  try {
+    if (editingSeason) {
+      await apiClient.put(
+        endpoints.GET_SEASON_DETAIL(editingSeason.id),
+        payload
+      );
+      message.success("Season updated successfully");
+    } else {
+      await apiClient.post(endpoints.GET_SEASONS, payload);
+      message.success("Season created successfully");
+    }
+    setModalVisible(false);
+    fetchSeasons();
+  } catch (error) {
+    console.error("Error saving season:", error);
+    message.error("Failed to save season");
+  }
+};
 
   const handleDelete = async (id) => {
     try {
@@ -136,7 +149,7 @@ const SeasonsList = () => {
       title: 'Tour',
       key: 'tour',
       render: (_, record) => record.tour?.title || 'N/A',
-      filters: tours.map(tour => ({ text: tour.title, value: tour.id })),
+      filters: Array.isArray(tours) ? tours.map(tour => ({ text: tour.title, value: tour.id })) : [],
       onFilter: (value, record) => record.tour?.id === value,
     },
     {
@@ -226,62 +239,85 @@ const SeasonsList = () => {
         footer={null}
         width={600}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
-          <Form.Item
-            name="tour"
-            label="Tour"
-            rules={[{ required: true, message: 'Please select a tour' }]}
-          >
-            <Select placeholder="Select tour">
-              {tours.map(tour => (
-                <Option key={tour.id} value={tour.id}>
-                  {tour.title}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
+       <Form
+  form={form}
+  layout="vertical"
+  onFinish={handleSubmit}
+>
+  {/* Tour */}
+  <Form.Item
+    name="tour"
+    label="Tour"
+    rules={[{ required: true, message: "Please select a tour" }]}
+  >
+    <Select placeholder="Select tour">
+      {Array.isArray(tours) &&
+        tours.map((tour) => (
+          <Select.Option key={tour.id} value={tour.id}>
+            {tour.title}
+          </Select.Option>
+        ))}
+    </Select>
+  </Form.Item>
 
-          <Form.Item
-            name="name"
-            label="Season Name"
-            rules={[{ required: true, message: 'Please enter season name' }]}
-          >
-            <Input placeholder="Enter season name" />
-          </Form.Item>
+  {/* Season Name */}
+  <Form.Item
+    name="name"
+    label="Season Name"
+    rules={[{ required: true, message: "Please enter season name" }]}
+  >
+    <Input placeholder="Enter season name" />
+  </Form.Item>
 
-          <Form.Item
-            name="month"
-            label="Month Range"
-            rules={[{ required: true, message: 'Please enter month range' }]}
-          >
-            <Input placeholder="e.g., July - September" />
-          </Form.Item>
+  {/* Start & End Month */}
+  <Row gutter={16}>
+    <Col xs={24} sm={12}>
+      <Form.Item
+        name="start_month"
+        label="Start Month"
+        rules={[{ required: true, message: "Please select start month" }]}
+      >
+        <DatePicker
+         format="MMMM"
+  style={{ width: "100%" }}
+  picker="month"
+  disabledDate={(current) =>
+    current && current.month() < form.getFieldValue("start_month")?.month()
+  }
+/>
+      </Form.Item>
+    </Col>
 
-          <Form.Item
-            name="description"
-            label="Description"
-          >
-            <Input.TextArea
-              rows={3}
-              placeholder="Enter season description"
-            />
-          </Form.Item>
+    <Col xs={24} sm={12}>
+      <Form.Item
+        name="end_month"
+        label="End Month"
+        rules={[{ required: true, message: "Please select end month" }]}
+      >
+        <DatePicker
+          picker="month"
+          style={{ width: "100%" }}
+          placeholder="End month"
+        />
+      </Form.Item>
+    </Col>
+  </Row>
 
-          <Form.Item>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <Button onClick={() => setModalVisible(false)}>
-                Cancel
-              </Button>
-              <Button type="primary" htmlType="submit">
-                {editingSeason ? 'Update' : 'Create'} Season
-              </Button>
-            </div>
-          </Form.Item>
-        </Form>
+  {/* Description */}
+  <Form.Item name="description" label="Description">
+    <Input.TextArea rows={3} placeholder="Enter season description" />
+  </Form.Item>
+
+  {/* Actions */}
+  <Form.Item>
+    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+      <Button onClick={() => setModalVisible(false)}>Cancel</Button>
+      <Button type="primary" htmlType="submit">
+        {editingSeason ? "Update" : "Create"} Season
+      </Button>
+    </div>
+  </Form.Item>
+</Form>
       </Modal>
     </div>
   );

@@ -4,7 +4,7 @@ import uuid
 from decimal import Decimal
 
 # Set up Django environment
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend_core.settings.base')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend_core.settings.development')
 django.setup()
 
 from apps.tours.models import Destination, Tour

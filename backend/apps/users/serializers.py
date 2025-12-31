@@ -117,9 +117,9 @@ class UserProfileSerializer(BaseSerializer):
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
-            'date_joined', 'last_login'
+            'role', 'date_joined', 'last_login'
         ]
-        read_only_fields = ['id', 'username', 'date_joined', 'last_login']
+        read_only_fields = ['id', 'username', 'role', 'date_joined', 'last_login']
     
     def validate_email(self, value):
         """Validate email uniqueness"""

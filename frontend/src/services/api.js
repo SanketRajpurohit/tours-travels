@@ -22,6 +22,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
+    // Try to get token from cookies first, then localStorage
     const cookieToken = Cookies.get("authToken");
     const storedToken = localStorage.getItem("authToken");
 
@@ -57,7 +58,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     if (!originalRequest) return Promise.reject(error);
 
-    // If unauthorized, try refresh flow
+    // If unauthorized, clear auth and redirect
     if (
       error.response &&
       error.response.status === 401 &&
@@ -65,33 +66,33 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const refreshToken = localStorage.getItem("refreshToken");
-
-      // No refresh token, clear auth and redirect
-      if (!refreshToken) {
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
-        localStorage.removeItem("userRole");
-        // Redirect to home page instead of /login (which doesn't exist for customers)
-        if (!window.location.pathname.includes("login") && window.location.pathname !== "/") {
+      // Clear all auth data
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("user");
+      localStorage.removeItem("userRole");
+      Cookies.remove("authToken");
+      Cookies.remove("user");
+      Cookies.remove("userRole");
+      
+      // Only redirect if not already on login page or public pages
+      const currentPath = window.location.pathname;
+      const publicPaths = ['/', '/tours', '/destinations', '/hotels', '/vehicles', '/offers'];
+      const isPublicPath = publicPaths.some(path => currentPath.startsWith(path));
+      const isLoginPath = currentPath.includes('login');
+      
+      if (!isLoginPath && !isPublicPath) {
+        // Redirect to home page for customers, admin login for admin areas
+        if (currentPath.includes('/admin')) {
+          window.location.href = "/admin/login";
+        } else {
           window.location.href = "/";
         }
-        return Promise.reject(error);
       }
-
-      if (isRefreshing) {
-        // Queue the request until token refreshed
-        return new Promise((resolve, reject) => {
-          subscribeTokenRefresh((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            resolve(api(originalRequest));
-          });
-        });
-      }
-
-
+      
+      return Promise.reject(error);
     }
+
+    return Promise.reject(error);
   }
 );
 

@@ -30,8 +30,8 @@ const InvoicesList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_INVOICES);
-      const invoicesData = response.data.results || response.data || [];
-      setInvoices(invoicesData);
+      const invoicesData = response.data?.data || response.data?.results || [];
+      setInvoices(Array.isArray(invoicesData) ? invoicesData : []);
     } catch (error) {
       console.error('Error fetching invoices:', error);
       message.error('Failed to load invoices');
@@ -66,13 +66,13 @@ const InvoicesList = () => {
     message.info('Invoice view feature will be implemented');
   };
 
-  const filteredInvoices = invoices.filter((invoice) => {
+  const filteredInvoices = Array.isArray(invoices) ? invoices.filter((invoice) => {
     const matchesSearch =
-      invoice.booking?.user?.username.toLowerCase().includes(searchText.toLowerCase()) ||
-      invoice.booking?.tour?.title.toLowerCase().includes(searchText.toLowerCase()) ||
-      invoice.id.toString().includes(searchText);
+      invoice.booking?.user?.username?.toLowerCase().includes(searchText.toLowerCase()) ||
+      invoice.booking?.tour?.title?.toLowerCase().includes(searchText.toLowerCase()) ||
+      invoice.id?.toString().includes(searchText);
     return matchesSearch;
-  });
+  }) : [];
 
   const columns = [
     {

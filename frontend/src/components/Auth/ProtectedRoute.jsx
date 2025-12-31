@@ -14,7 +14,7 @@ const ProtectedRoute = ({ children }) => {
 
     // Admin-only area
     if (location.pathname.startsWith("/admin")) {
-        if (!user || user.role !== "admin") {
+        if (!user || user.role !== "ADMIN") {
             return <Navigate to="/forbidden" replace />;
         }
     }

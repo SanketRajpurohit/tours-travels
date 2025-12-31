@@ -5,7 +5,7 @@ export const endpoints = {
   LOGIN: "/auth/login/",
   LOGOUT: "/auth/logout/",
   ADMIN_LOGOUT: "/auth/logout/",
-  GET_USER: "/users/profile/",
+  GET_USER: "/auth/me/",
   VERIFY_TOKEN: "/auth/verify/",
 
   // Tours

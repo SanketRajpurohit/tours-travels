@@ -111,6 +111,12 @@ class UserViewSet(BaseViewSet):
         """
         Get or update current user's profile
         """
+        if not request.user.is_authenticated:
+            return APIResponse.error(
+                message="Authentication required",
+                status_code=status.HTTP_401_UNAUTHORIZED
+            )
+            
         user = request.user
         
         if request.method == 'GET':

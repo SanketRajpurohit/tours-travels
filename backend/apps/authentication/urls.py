@@ -16,4 +16,5 @@ urlpatterns = [
     # Common endpoints
     path('logout/', views.logout, name='logout'),
     path('verify/', views.verify_token, name='verify-token'),
+    path('me/', views.me, name='me'),
 ]

@@ -41,45 +41,34 @@ const BookingsList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_BOOKINGS);
-      const bookingsData = response.data.results || response.data || [];
-      setBookings(bookingsData);
+      const bookingsData = response.data?.data || response.data?.results || [];
+      setBookings(Array.isArray(bookingsData) ? bookingsData : []);
     } catch (error) {
       console.error('Error fetching bookings:', error);
       message.error('Failed to load bookings');
-      // Set dummy data for development
+      // Set dummy data
       setBookings([
         {
           id: 1,
           user: { username: 'john_doe', email: 'john@example.com' },
-          tour: { title: 'Sikkim Adventure', duration_days: 8 },
+          tour: { title: 'Sikkim Adventure', duration_days: 5 },
           booking_date: '2024-01-15',
           travel_date: '2024-02-15',
-          no_people: 3,
-          total_price: 146997,
+          no_people: 2,
+          total_price: 97998,
           status: 'confirmed',
           payment_status: 'paid',
         },
         {
           id: 2,
           user: { username: 'jane_smith', email: 'jane@example.com' },
-          tour: { title: 'Vietnam Discovery', duration_days: 9 },
+          tour: { title: 'Vietnam Discovery', duration_days: 7 },
           booking_date: '2024-01-20',
-          travel_date: '2024-03-01',
-          no_people: 2,
-          total_price: 209998,
+          travel_date: '2024-03-10',
+          no_people: 4,
+          total_price: 209996,
           status: 'pending',
           payment_status: 'pending',
-        },
-        {
-          id: 3,
-          user: { username: 'mike_wilson', email: 'mike@example.com' },
-          tour: { title: 'Goa Beach Holiday', duration_days: 5 },
-          booking_date: '2024-01-10',
-          travel_date: '2024-02-01',
-          no_people: 4,
-          total_price: 103996,
-          status: 'cancelled',
-          payment_status: 'refunded',
         },
       ]);
     } finally {
@@ -105,14 +94,15 @@ const BookingsList = () => {
     setDetailModalVisible(true);
   };
 
-  const filteredBookings = bookings.filter((booking) => {
+  const filteredBookings = Array.isArray(bookings) ? bookings.filter((booking) => {
     const matchesSearch =
-      booking.user?.username.toLowerCase().includes(searchText.toLowerCase()) ||
-      booking.user?.email.toLowerCase().includes(searchText.toLowerCase()) ||
-      booking.tour?.title.toLowerCase().includes(searchText.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || booking.status === filterStatus;
+      booking.user?.username?.toLowerCase().includes(searchText.toLowerCase()) ||
+      booking.user?.email?.toLowerCase().includes(searchText.toLowerCase()) ||
+      booking.tour?.title?.toLowerCase().includes(searchText.toLowerCase()) ||
+      booking.tour_details?.name?.toLowerCase().includes(searchText.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || booking.status?.toLowerCase() === filterStatus.toLowerCase();
     return matchesSearch && matchesStatus;
-  });
+  }) : [];
 
   const getStatusColor = (status) => {
     const colors = {

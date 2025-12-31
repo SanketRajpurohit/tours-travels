@@ -17,9 +17,9 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       setLoading(true);
-      const storedToken = Cookies.get("authToken")
-      const storedUser = Cookies.get("user")
-      const storedRole = Cookies.get("userRole")
+      const storedToken = Cookies.get("authToken") || localStorage.getItem("authToken");
+      const storedUser = Cookies.get("user") || localStorage.getItem("user");
+      const storedRole = Cookies.get("userRole") || localStorage.getItem("userRole");
 
       if (storedToken && storedUser) {
         try {
@@ -29,12 +29,38 @@ export const UserProvider = ({ children }) => {
           setRole(storedRole);
           setIsAuthenticated(true);
 
-          // Skip token validation for now to prevent logout on refresh
-          // TODO: Implement proper token validation later
+          // Validate token with /me endpoint
+          try {
+            const meResp = await apiClient.get(endpoints.GET_USER);
+            const currentUserData = meResp.data?.data;
+            if (currentUserData) {
+              setUser(currentUserData);
+              setRole(currentUserData.role);
+              // Update stored data with fresh data
+              Cookies.set("user", JSON.stringify(currentUserData), { expires: 7 });
+              Cookies.set("userRole", currentUserData.role, { expires: 7 });
+              localStorage.setItem("user", JSON.stringify(currentUserData));
+              localStorage.setItem("userRole", currentUserData.role);
+            }
+          } catch (error) {
+            console.warn("Token validation failed, clearing auth:", error);
+            // Clear invalid auth data
+            setUser(null);
+            setToken(null);
+            setRole(null);
+            setIsAuthenticated(false);
+            Cookies.remove("authToken");
+            Cookies.remove("user");
+            Cookies.remove("userRole");
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("user");
+            localStorage.removeItem("userRole");
+          }
+
           console.log("Auth initialized from stored data:", userData);
         } catch (error) {
           console.warn("Failed to parse stored user data:", error);
-          // Only clear auth if parsing fails, not on API errors
+          // Clear corrupted auth data
           setUser(null);
           setToken(null);
           setRole(null);
@@ -42,7 +68,9 @@ export const UserProvider = ({ children }) => {
           Cookies.remove("authToken");
           Cookies.remove("user");
           Cookies.remove("userRole");
-
+          localStorage.removeItem("authToken");
+          localStorage.removeItem("user");
+          localStorage.removeItem("userRole");
         }
       }
       setLoading(false);
@@ -55,7 +83,6 @@ export const UserProvider = ({ children }) => {
   const login = async (email, password, userType = "user") => {
     setLoading(true);
     try {
-
       const response = await apiClient.post(endpoints.LOGIN, {
         email,
         password,
@@ -64,29 +91,40 @@ export const UserProvider = ({ children }) => {
       const data = response?.data;
       const authToken = data?.data?.access_token;
 
-
       if (!authToken) throw new Error("No access token received");
 
-      // Save token
+      // Save token to both cookies and localStorage for redundancy
       setToken(authToken);
-      Cookies.set("authToken", authToken);
-
-
-
+      Cookies.set("authToken", authToken, { expires: 7 }); // 7 days
+      localStorage.setItem("authToken", authToken);
 
       setIsAuthenticated(true);
 
-      // Fetch user 'me' from API
+      // Fetch user data from API
       try {
         const meResp = await apiClient.get(endpoints.GET_USER);
-        const userData = meResp.data;
-        setUser(userData);
-        setRole(userData.role || userType);
-        Cookies.set("user", JSON.stringify(userData));
-        Cookies.set("userRole", userData.role || userType);
-
+        const userData = meResp.data?.data;
+        if (userData) {
+          setUser(userData);
+          setRole(userData.role || userType);
+          // Store user data in both cookies and localStorage
+          Cookies.set("user", JSON.stringify(userData), { expires: 7 });
+          Cookies.set("userRole", userData.role || userType, { expires: 7 });
+          localStorage.setItem("user", JSON.stringify(userData));
+          localStorage.setItem("userRole", userData.role || userType);
+        }
       } catch (err) {
-        console.warn("Failed to fetch /api/me/:", err);
+        console.warn("Failed to fetch user data:", err);
+        // Use data from login response as fallback
+        const fallbackUser = data?.data?.user;
+        if (fallbackUser) {
+          setUser(fallbackUser);
+          setRole(fallbackUser.role || userType);
+          Cookies.set("user", JSON.stringify(fallbackUser), { expires: 7 });
+          Cookies.set("userRole", fallbackUser.role || userType, { expires: 7 });
+          localStorage.setItem("user", JSON.stringify(fallbackUser));
+          localStorage.setItem("userRole", fallbackUser.role || userType);
+        }
       }
 
       message.success("Login successful!");
@@ -103,27 +141,77 @@ export const UserProvider = ({ children }) => {
 
   // Admin-specific login wrapper
   const adminLogin = async (email, password) => {
+    setLoading(true);
+    try {
+      const response = await apiClient.post(endpoints.ADMIN_LOGIN, {
+        email,
+        password,
+      });
 
-    const result = await login(email, password, "admin");
-    if (!result.success) return result;
+      const data = response?.data;
+      const authToken = data?.data?.access_token;
 
-    // Wait a bit for the user state to be set
-    await new Promise(resolve => setTimeout(resolve, 100));
+      if (!authToken) throw new Error("No access token received");
 
-    // verify role from current user state or cookies
-    const currentUser = user || JSON.parse(Cookies.get("user") || "null");
-    if (!currentUser || currentUser.role !== "admin") {
-      await logout();
-      return { success: false, error: "Access denied. Admin privileges required." };
+      // Save token to both cookies and localStorage
+      setToken(authToken);
+      Cookies.set("authToken", authToken, { expires: 7 });
+      localStorage.setItem("authToken", authToken);
+
+      setIsAuthenticated(true);
+
+      // Fetch user data from API
+      try {
+        const meResp = await apiClient.get(endpoints.GET_USER);
+        const userData = meResp.data?.data;
+        if (userData) {
+          // Verify admin role
+          if (userData.role !== 'ADMIN') {
+            await logout();
+            return { success: false, error: "Access denied. Admin privileges required." };
+          }
+          
+          setUser(userData);
+          setRole(userData.role);
+          Cookies.set("user", JSON.stringify(userData), { expires: 7 });
+          Cookies.set("userRole", userData.role, { expires: 7 });
+          localStorage.setItem("user", JSON.stringify(userData));
+          localStorage.setItem("userRole", userData.role);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch user data:", err);
+        // Use data from login response as fallback
+        const fallbackUser = data?.data?.user;
+        if (fallbackUser && fallbackUser.role === 'ADMIN') {
+          setUser(fallbackUser);
+          setRole(fallbackUser.role);
+          Cookies.set("user", JSON.stringify(fallbackUser), { expires: 7 });
+          Cookies.set("userRole", fallbackUser.role, { expires: 7 });
+          localStorage.setItem("user", JSON.stringify(fallbackUser));
+          localStorage.setItem("userRole", fallbackUser.role);
+        } else {
+          await logout();
+          return { success: false, error: "Access denied. Admin privileges required." };
+        }
+      }
+
+      message.success("Admin login successful!");
+      return { success: true, data };
+    } catch (error) {
+      const errorMsg =
+        error.response?.data?.message || error.message || "Admin login failed";
+      message.error(errorMsg);
+      return { success: false, error: errorMsg };
+    } finally {
+      setLoading(false);
     }
-
-    return { success: true, data: currentUser };
   };
 
   // Logout function
   const logout = async () => {
     try {
-
+      // Call logout endpoint (optional since JWT is stateless)
+      await apiClient.post(endpoints.LOGOUT);
     } catch (error) {
       console.error("Logout API error:", error);
     } finally {
@@ -133,10 +221,13 @@ export const UserProvider = ({ children }) => {
       setRole(null);
       setIsAuthenticated(false);
 
+      // Clear both cookies and localStorage
       Cookies.remove("authToken");
       Cookies.remove("user");
       Cookies.remove("userRole");
-
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("user");
+      localStorage.removeItem("userRole");
 
       message.success("Logged out successfully");
     }

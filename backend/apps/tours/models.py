@@ -248,7 +248,7 @@ class Tour(BaseModel):
             tour=self,
             status='CONFIRMED'
         ).aggregate(
-            total_participants=models.Sum('participants_count')
+            total_participants=models.Sum('travelers_count')
         )['total_participants'] or 0
         
         return max(0, self.max_capacity - confirmed_bookings)
@@ -314,7 +314,7 @@ class TourPackage(BaseModel):
             package=self,
             status='CONFIRMED'
         ).aggregate(
-            total_participants=models.Sum('participants_count')
+            total_participants=models.Sum('travelers_count')
         )['total_participants'] or 0
         
         return max(0, self.max_participants - confirmed_bookings)

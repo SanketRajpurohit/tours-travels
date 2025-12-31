@@ -38,8 +38,8 @@ const PricingsList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_PRICINGS);
-      const pricingsData = response.data.results || response.data || [];
-      setPricings(pricingsData);
+      const pricingsData = response.data?.data || response.data?.results || [];
+      setPricings(Array.isArray(pricingsData) ? pricingsData : []);
     } catch (error) {
       console.error('Error fetching pricings:', error);
       message.error('Failed to load pricings');
@@ -72,14 +72,11 @@ const PricingsList = () => {
   const fetchTours = async () => {
     try {
       const response = await apiClient.get(endpoints.GET_ALL_TOURS);
-      const toursData = response.data.results || response.data || [];
-      setTours(toursData);
+      const toursData = response.data?.data || response.data?.results || [];
+      setTours(Array.isArray(toursData) ? toursData : []);
     } catch (error) {
       console.error('Error fetching tours:', error);
-      setTours([
-        { id: 1, title: 'Sikkim Adventure' },
-        { id: 2, title: 'Vietnam Discovery' },
-      ]);
+      setTours([]);
     }
   };
 
@@ -245,9 +242,9 @@ const PricingsList = () => {
             rules={[{ required: true, message: 'Please select a tour' }]}
           >
             <Select placeholder="Select tour">
-              {tours.map(tour => (
+              {Array.isArray(tours) && tours.map(tour => (
                 <Option key={tour.id} value={tour.id}>
-                  {tour.title}
+                  {tour.title || tour.name}
                 </Option>
               ))}
             </Select>
@@ -268,9 +265,9 @@ const PricingsList = () => {
 
           <div style={{ display: 'flex', gap: 16 }}>
             <Form.Item
-              name="adult_price"
-              label="Adult Price (₹)"
-              rules={[{ required: true, message: 'Please enter adult price' }]}
+              name="price"
+              label=" Price (₹)"
+              rules={[{ required: true, message: 'Please enter  price' }]}
               style={{ flex: 1 }}
             >
               <InputNumber
@@ -280,22 +277,10 @@ const PricingsList = () => {
               />
             </Form.Item>
 
-            <Form.Item
-              name="child_price"
-              label="Child Price (₹)"
-              rules={[{ required: true, message: 'Please enter child price' }]}
-              style={{ flex: 1 }}
-            >
-              <InputNumber
-                min={0}
-                style={{ width: '100%' }}
-                placeholder="Enter child price"
-              />
-            </Form.Item>
           </div>
 
           <Form.Item
-            name="season_month"
+            name="season"
             label="Season"
             rules={[{ required: true, message: 'Please enter season' }]}
           >

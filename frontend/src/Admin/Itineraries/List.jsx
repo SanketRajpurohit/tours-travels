@@ -39,8 +39,8 @@ const ItinerariesList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_ITINERARIES);
-      const itinerariesData = response.data.results || response.data || [];
-      setItineraries(itinerariesData);
+      const itinerariesData = response.data?.data || response.data?.results || [];
+      setItineraries(Array.isArray(itinerariesData) ? itinerariesData : []);
     } catch (error) {
       console.error('Error fetching itineraries:', error);
       message.error('Failed to load itineraries');
@@ -76,8 +76,8 @@ const ItinerariesList = () => {
   const fetchDestinations = async () => {
     try {
       const response = await apiClient.get(endpoints.GET_DESTINATIONS);
-      const destinationsData = response.data.results || response.data || [];
-      setDestinations(destinationsData);
+      const destinationsData = response.data?.data || response.data?.results || [];
+      setDestinations(Array.isArray(destinationsData) ? destinationsData : []);
     } catch (error) {
       console.error('Error fetching destinations:', error);
       setDestinations([
@@ -139,7 +139,7 @@ const ItinerariesList = () => {
       title: 'Destination',
       key: 'destination',
       render: (_, record) => record.destination?.name || 'N/A',
-      filters: destinations.map(dest => ({ text: dest.name, value: dest.id })),
+      filters: Array.isArray(destinations) ? destinations.map(dest => ({ text: dest.name, value: dest.id })) : [],
       onFilter: (value, record) => record.destination?.id === value,
     },
     {
@@ -242,7 +242,7 @@ const ItinerariesList = () => {
             rules={[{ required: true, message: 'Please select a destination' }]}
           >
             <Select placeholder="Select destination">
-              {destinations.map(dest => (
+              {Array.isArray(destinations) && destinations.map(dest => (
                 <Option key={dest.id} value={dest.id}>
                   {dest.name}
                 </Option>

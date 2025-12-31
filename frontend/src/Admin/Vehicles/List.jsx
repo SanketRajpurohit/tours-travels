@@ -17,7 +17,7 @@ import {
 } from '@ant-design/icons';
 
 import { endpoints } from '../../constant/ENDPOINTS';
-
+import { apiClient } from '../../services/api';
 
 const { TextArea } = Input;
 
@@ -36,8 +36,8 @@ const VehiclesList = () => {
     try {
       setLoading(true);
       const response = await apiClient.get(endpoints.GET_VEHICLES);
-      const vehiclesData = response.data.results || response.data || [];
-      setVehicles(vehiclesData);
+      const vehiclesData = response.data?.data || response.data?.results || [];
+      setVehicles(Array.isArray(vehiclesData) ? vehiclesData : []);
     } catch (error) {
       console.error('Error fetching vehicles:', error);
       message.error('Failed to load vehicles');
@@ -47,7 +47,7 @@ const VehiclesList = () => {
           id: 1,
           vehicle_no: 'GJ-01-AB-1234',
           vehicle_name: 'INNOVA',
-          description: 'AC Will Not Work in Hill Areas',
+          description: 'Comfortable for long distance travel',
         },
         {
           id: 2,
